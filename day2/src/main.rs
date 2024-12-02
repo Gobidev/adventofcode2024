@@ -19,29 +19,21 @@ fn is_safe(report: &[u32]) -> bool {
 }
 
 fn part1(parsed_input: &[Vec<u32>]) -> u32 {
-    parsed_input
-        .iter()
-        .filter(|report| is_safe(report))
-        .count() as u32
+    parsed_input.iter().filter(|report| is_safe(report)).count() as u32
 }
 
 fn part2(parsed_input: &[Vec<u32>]) -> u32 {
-    let mut res = 0;
-    for report in parsed_input {
-        if is_safe(report) {
-            res += 1;
-            continue;
-        }
-        for idx in 0..report.len() {
-            let mut modified_report = report.clone();
-            modified_report.remove(idx);
-            if is_safe(&modified_report) {
-                res += 1;
-                break;
-            }
-        }
-    }
-    res
+    parsed_input
+        .iter()
+        .filter(|report| {
+            is_safe(report)
+                || (0..report.len()).any(|idx| {
+                    let mut modified_report = (*report).clone();
+                    modified_report.remove(idx);
+                    is_safe(&modified_report)
+                })
+        })
+        .count() as u32
 }
 
 fn main() {
