@@ -1,7 +1,8 @@
-use rayon::prelude::*;
+use ahash::AHashSet;
+use itertools::Itertools;
 
 struct ParsedInput {
-    rules: Vec<(u32, u32)>,
+    rules: AHashSet<(u32, u32)>,
     pages: Vec<Vec<u32>>,
 }
 
@@ -20,41 +21,31 @@ fn parse(input: &str) -> ParsedInput {
     }
 }
 
-fn all_rules_apply(rules: &[(u32, u32)], page: &[u32]) -> bool {
-    rules.iter().all(|rule| {
-        let Some(first) = page.iter().enumerate().find(|(_, e)| e == &&rule.0) else {
-            return true;
-        };
-        let Some(second) = page.iter().enumerate().find(|(_, e)| e == &&rule.1) else {
-            return true;
-        };
-        first.0 < second.0
-    })
+fn all_rules_apply(rules: &AHashSet<(u32, u32)>, page: &[u32]) -> bool {
+    page.iter()
+        .combinations(2)
+        .all(|c| rules.get(&(*c[1], *c[0])).is_none())
 }
 
 fn part1(parsed_input: &ParsedInput) -> u32 {
     parsed_input
         .pages
-        .par_iter()
+        .iter()
         .filter(|page| all_rules_apply(&parsed_input.rules, page))
         .map(|rule| rule[rule.len() / 2])
         .sum()
 }
 
-fn correct_page(page: &mut [u32], rules: &[(u32, u32)]) {
-    page.sort_by(|a, b| match all_rules_apply(rules, &[*a, *b]) {
-        true => std::cmp::Ordering::Less,
-        false => std::cmp::Ordering::Greater,
-    });
-}
-
 fn part2(parsed_input: &mut ParsedInput) -> u32 {
     parsed_input
         .pages
-        .par_iter_mut()
+        .iter_mut()
         .filter(|page| !all_rules_apply(&parsed_input.rules, page))
         .map(|page| {
-            correct_page(page, &parsed_input.rules);
+            page.sort_by(|a, b| match !parsed_input.rules.contains(&(*a, *b)) {
+                true => std::cmp::Ordering::Less,
+                false => std::cmp::Ordering::Greater,
+            });
             page[page.len() / 2]
         })
         .sum()
