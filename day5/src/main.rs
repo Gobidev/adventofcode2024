@@ -1,3 +1,5 @@
+use rayon::prelude::*;
+
 struct ParsedInput {
     rules: Vec<(u32, u32)>,
     pages: Vec<Vec<u32>>,
@@ -33,35 +35,33 @@ fn all_rules_apply(rules: &[(u32, u32)], page: &[u32]) -> bool {
 fn part1(parsed_input: &ParsedInput) -> u32 {
     parsed_input
         .pages
-        .iter()
+        .par_iter()
         .filter(|page| all_rules_apply(&parsed_input.rules, page))
         .map(|rule| rule[rule.len() / 2])
         .sum()
 }
 
-fn part2(parsed_input: &ParsedInput) -> u32 {
+fn correct_page(page: &mut [u32], rules: &[(u32, u32)]) {
+    page.sort_by(|a, b| match all_rules_apply(rules, &[*a, *b]) {
+        true => std::cmp::Ordering::Less,
+        false => std::cmp::Ordering::Greater,
+    });
+}
+
+fn part2(parsed_input: &mut ParsedInput) -> u32 {
     parsed_input
         .pages
-        .iter()
+        .par_iter_mut()
         .filter(|page| !all_rules_apply(&parsed_input.rules, page))
-        .fold(vec![], |mut acc, curr| {
-            let mut corrected_page = curr.clone();
-            corrected_page.sort_unstable_by(|a, b| {
-                match all_rules_apply(&parsed_input.rules, &[*a, *b]) {
-                    true => std::cmp::Ordering::Less,
-                    false => std::cmp::Ordering::Greater,
-                }
-            });
-            acc.push(corrected_page);
-            acc
+        .map(|page| {
+            correct_page(page, &parsed_input.rules);
+            page[page.len() / 2]
         })
-        .iter()
-        .map(|rule| rule[rule.len() / 2])
         .sum()
 }
 
 fn main() {
-    let input = parse(include_str!("../input.txt"));
+    let mut input = parse(include_str!("../input.txt"));
     println!("{}", part1(&input));
-    println!("{}", part2(&input));
+    println!("{}", part2(&mut input));
 }
