@@ -145,7 +145,7 @@ fn part1(state: &mut State) -> usize {
     while move_guard(state) == Running {}
     state
         .map
-        .iter()
+        .par_iter()
         .map(|l| l.iter().filter(|c| matches!(c, Visited(_))).count())
         .sum()
 }
