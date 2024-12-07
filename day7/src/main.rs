@@ -21,16 +21,13 @@ fn is_possible(res: usize, curr: usize, nums: &[usize], part2: bool) -> bool {
     }
     is_possible(res, curr * nums[0], &nums[1..], part2)
         || is_possible(res, curr + nums[0], &nums[1..], part2)
-        || if part2 {
-            is_possible(
+        || (part2
+            && is_possible(
                 res,
                 curr * 10usize.pow(nums[0].ilog10() + 1) + nums[0],
                 &nums[1..],
                 part2,
-            )
-        } else {
-            false
-        }
+            ))
 }
 
 fn part12(input: &[Vec<usize>], part2: bool) -> usize {
