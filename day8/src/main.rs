@@ -59,13 +59,10 @@ fn part2(parsed_input: &ParsedInput) -> usize {
             positions.iter().permutations(2).flat_map(|p| {
                 let diff = p[1] - p[0];
                 let step = diff / diff.x.gcd(&diff.y);
-                let mut curr = *p[0];
-                let mut res = vec![];
-                while is_in_bounds(&parsed_input.dimensions, &curr) {
-                    res.push(curr);
-                    curr += &step;
-                }
-                res
+                (0..)
+                    .map(|i| p[0] + i * step)
+                    .take_while(|pos| is_in_bounds(&parsed_input.dimensions, pos))
+                    .collect::<Vec<_>>()
             })
         })
         .unique()
