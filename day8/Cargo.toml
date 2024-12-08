@@ -1,0 +1,9 @@
+[package]
+name = "day8"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy_math = "0.15.0"
+itertools = "0.13.0"
+num = "0.4.3"
