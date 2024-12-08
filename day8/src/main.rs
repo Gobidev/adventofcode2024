@@ -73,7 +73,7 @@ fn part2(parsed_input: &ParsedInput) -> usize {
 }
 
 fn main() {
-    let input = parse(include_str!("../test_input.txt"));
+    let input = parse(include_str!("../input.txt"));
     println!("{}", part1(&input));
     println!("{}", part2(&input));
 }
