@@ -24,20 +24,18 @@ fn checksum(filesystem: &[isize]) -> usize {
 }
 
 fn part1(filesystem: &mut [isize]) -> usize {
+    let mut last = filesystem.len() - 1;
     for space_idx in 0..filesystem.len() {
         if filesystem[space_idx] >= 0 {
             continue;
         }
-        let last = filesystem
-            .iter()
-            .enumerate()
-            .rev()
-            .find(|(_, n)| n >= &&0)
-            .unwrap();
-        if last.0 < space_idx {
+        while filesystem[last] < 0 {
+            last -= 1;
+        }
+        if last < space_idx {
             break;
         }
-        filesystem.swap(space_idx, last.0);
+        filesystem.swap(space_idx, last);
     }
     checksum(filesystem)
 }
