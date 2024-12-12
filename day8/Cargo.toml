@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bevy_math = "0.15.0"
+glam = "0.29.2"
 itertools = "0.13.0"
 num = "0.4.3"

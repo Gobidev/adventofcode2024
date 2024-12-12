@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use bevy_math::IVec2;
+use glam::IVec2;
 use itertools::Itertools;
 use num::Integer;
 
