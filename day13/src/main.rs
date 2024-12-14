@@ -10,20 +10,27 @@ struct Machine {
     y3: isize,
 }
 
-#[rustfmt::skip]
 fn parse(input: &str) -> Vec<Machine> {
     let re = Regex::new(r"\d+").unwrap();
     input
         .split("\n\n")
         .map(|m| {
-            let mut captures = re.captures_iter(m);
+            let &[x1, y1, x2, y2, x3, y3] = re
+                .captures_iter(m)
+                .take(6)
+                .map(|d| d.get(0).unwrap().as_str().parse().unwrap())
+                .collect::<Vec<_>>()
+                .as_slice()
+            else {
+                panic!()
+            };
             Machine {
-                x1: captures.next().unwrap().get(0).unwrap().as_str().parse().unwrap(),
-                y1: captures.next().unwrap().get(0).unwrap().as_str().parse().unwrap(),
-                x2: captures.next().unwrap().get(0).unwrap().as_str().parse().unwrap(),
-                y2: captures.next().unwrap().get(0).unwrap().as_str().parse().unwrap(),
-                x3: captures.next().unwrap().get(0).unwrap().as_str().parse().unwrap(),
-                y3: captures.next().unwrap().get(0).unwrap().as_str().parse().unwrap(),
+                x1,
+                y1,
+                x2,
+                y2,
+                x3,
+                y3,
             }
         })
         .collect()
