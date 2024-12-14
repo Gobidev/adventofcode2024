@@ -7,22 +7,26 @@ struct Robot {
     velocity: IVec2,
 }
 
-#[rustfmt::skip]
 fn parse(input: &str) -> Vec<Robot> {
     let re = Regex::new(r"-?\d+").unwrap();
-    input.lines().map(|l| {
-        let mut captures = re.captures_iter(l);
-        Robot {
-            position: IVec2 {
-                x: captures.next().unwrap().get(0).unwrap().as_str().parse().unwrap(),
-                y: captures.next().unwrap().get(0).unwrap().as_str().parse().unwrap(),
-            },
-            velocity: IVec2 {
-                x: captures.next().unwrap().get(0).unwrap().as_str().parse().unwrap(),
-                y: captures.next().unwrap().get(0).unwrap().as_str().parse().unwrap(),
+    input
+        .lines()
+        .map(|l| {
+            let &[px, py, vx, vy] = re
+                .captures_iter(l)
+                .take(4)
+                .map(|c| c.get(0).unwrap().as_str().parse().unwrap())
+                .collect::<Vec<_>>()
+                .as_slice()
+            else {
+                panic!()
+            };
+            Robot {
+                position: IVec2 { x: px, y: py },
+                velocity: IVec2 { x: vx, y: vy },
             }
-        }
-    }).collect()
+        })
+        .collect()
 }
 
 fn get_pos_after_steps(robot: &Robot, steps: &i32, dimensions: &IVec2) -> IVec2 {
