@@ -26,29 +26,7 @@ fn parse(input: &str) -> Vec<Robot> {
 }
 
 fn get_pos_after_steps(robot: &Robot, steps: &i32, dimensions: &IVec2) -> IVec2 {
-    let p = robot.position + steps * robot.velocity;
-    let mut res = IVec2::new(0, 0);
-    if p.x >= 0 {
-        res.x = p.x % dimensions.x;
-    } else {
-        let diff = p.x.abs() % dimensions.x;
-        if diff == 0 {
-            res.x = 0;
-        } else {
-            res.x = dimensions.x - diff;
-        }
-    }
-    if p.y >= 0 {
-        res.y = p.y % dimensions.y;
-    } else {
-        let diff = p.y.abs() % dimensions.y;
-        if diff == 0 {
-            res.y = 0;
-        } else {
-            res.y = dimensions.y - diff;
-        }
-    }
-    res
+    (robot.position + steps * robot.velocity).rem_euclid(*dimensions)
 }
 
 fn part1(input: &[Robot], dimensions: &IVec2) -> usize {
@@ -74,24 +52,24 @@ fn part1(input: &[Robot], dimensions: &IVec2) -> usize {
         .product()
 }
 
-// fn print_map(robots: &[Robot], dimensions: &IVec2) -> String {
-//     let mut res = String::new();
-//     for y in 0..dimensions.x {
-//         for x in 0..dimensions.y {
-//             if robots
-//                 .iter()
-//                 .map(|r| (r.position.x, r.position.y))
-//                 .any(|p| p == (x, y))
-//             {
-//                 res.push('#');
-//             } else {
-//                 res.push(' ');
-//             }
-//         }
-//         res.push('\n');
-//     }
-//     res
-// }
+fn print_map(robots: &[Robot], dimensions: &IVec2) -> String {
+    let mut res = String::new();
+    for y in 0..dimensions.x {
+        for x in 0..dimensions.y {
+            if robots
+                .iter()
+                .map(|r| (r.position.x, r.position.y))
+                .any(|p| p == (x, y))
+            {
+                res.push('#');
+            } else {
+                res.push(' ');
+            }
+        }
+        res.push('\n');
+    }
+    res
+}
 
 fn has_tree(robots: &[Robot]) -> bool {
     let check: Vec<_> = (0..8).map(|i| IVec2::new(i, 0)).collect();
@@ -105,6 +83,7 @@ fn has_tree(robots: &[Robot]) -> bool {
 fn part2(robots: &mut [Robot], dimensions: &IVec2) -> i32 {
     for i in 0.. {
         if has_tree(robots) {
+            eprintln!("{}", print_map(robots, dimensions));
             return i;
         }
         robots
