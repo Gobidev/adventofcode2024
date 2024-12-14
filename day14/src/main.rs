@@ -1,4 +1,5 @@
 use glam::IVec2;
+use itertools::Itertools;
 use regex::Regex;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -76,12 +77,13 @@ fn print_map(robots: &[Robot], dimensions: &IVec2) -> String {
 }
 
 fn has_tree(robots: &[Robot]) -> bool {
-    let check: Vec<_> = (0..16).map(|i| IVec2::new(i, 0)).collect();
-    robots.iter().any(|p| {
-        check
-            .iter()
-            .all(|c| robots.iter().any(|p2| p2.position == p.position + c))
-    })
+    robots.len() == robots.iter().map(|r| r.position).unique().count()
+    // let check: Vec<_> = (0..16).map(|i| IVec2::new(i, 0)).collect();
+    // robots.iter().any(|p| {
+    //     check
+    //         .iter()
+    //         .all(|c| robots.iter().any(|p2| p2.position == p.position + c))
+    // })
 }
 
 fn part2(robots: &mut [Robot], dimensions: &IVec2) -> i32 {
