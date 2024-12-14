@@ -72,7 +72,7 @@ fn print_map(robots: &[Robot], dimensions: &IVec2) -> String {
 }
 
 fn has_tree(robots: &[Robot]) -> bool {
-    let check: Vec<_> = (0..8).map(|i| IVec2::new(i, 0)).collect();
+    let check: Vec<_> = (0..16).map(|i| IVec2::new(i, 0)).collect();
     robots.iter().any(|p| {
         check
             .iter()
