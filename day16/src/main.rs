@@ -49,7 +49,7 @@ impl Direction {
         }
     }
 
-    fn reverse(&self) -> Self {
+    fn turn_around(&self) -> Self {
         match self {
             North => South,
             South => North,
@@ -111,46 +111,46 @@ fn parse(input: &str) -> (Vec<Vec<Tile>>, IVec2, IVec2) {
 }
 
 fn get_scores(grid: &[Vec<Tile>], start_pos: &IVec2) -> AHashMap<(IVec2, Direction), u32> {
+    // dijkstra
+
     let mut to_visit = BinaryHeap::new();
     let mut visited = AHashMap::new();
-    let start_node = Node {
+    to_visit.push(Reverse(Node {
         score: 0,
         direction: East,
         position: *start_pos,
-    };
-    to_visit.push(Reverse(start_node));
+    }));
 
-    while let Some(curr_node) = to_visit.pop() {
+    while let Some(curr) = to_visit.pop() {
+        let curr = curr.0;
+
         if visited
-            .get(&(curr_node.0.position, curr_node.0.direction))
-            .map_or(false, |s| s < &curr_node.0.score)
+            .get(&(curr.position, curr.direction))
+            .map_or(false, |s| s < &curr.score)
         {
             continue;
         }
-        visited.insert(
-            (curr_node.0.position, curr_node.0.direction),
-            curr_node.0.score,
-        );
+        visited.insert((curr.position, curr.direction), curr.score);
 
-        let pos_in_front = curr_node.0.position + curr_node.0.direction.as_vec();
+        let pos_in_front = curr.position + curr.direction.as_vec();
         if grid[pos_in_front.x as usize][pos_in_front.y as usize] != Wall {
             to_visit.push(Reverse(Node {
-                score: curr_node.0.score + 1,
-                direction: curr_node.0.direction,
-                position: curr_node.0.position + curr_node.0.direction.as_vec(),
+                score: curr.score + 1,
+                direction: curr.direction,
+                position: curr.position + curr.direction.as_vec(),
             }));
         }
 
         to_visit.push(Reverse(Node {
-            score: curr_node.0.score + 1000,
-            direction: curr_node.0.direction.turn_left(),
-            position: curr_node.0.position,
+            score: curr.score + 1000,
+            direction: curr.direction.turn_left(),
+            position: curr.position,
         }));
 
         to_visit.push(Reverse(Node {
-            score: curr_node.0.score + 1000,
-            direction: curr_node.0.direction.turn_right(),
-            position: curr_node.0.position,
+            score: curr.score + 1000,
+            direction: curr.direction.turn_right(),
+            position: curr.position,
         }));
     }
     visited
@@ -165,38 +165,63 @@ fn part1(scores: &AHashMap<(IVec2, Direction), u32>, end_pos: &IVec2) -> u32 {
         .unwrap()
 }
 
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+struct Visit {
+    position: IVec2,
+    direction: Direction,
+    score: u32,
+}
+
 fn part2(scores: &AHashMap<(IVec2, Direction), u32>, end_pos: &IVec2) -> usize {
+    // bfs from end to start along shortest paths
+
     let shortest_path_len = part1(scores, end_pos);
     let mut seen: AHashSet<IVec2> = AHashSet::new();
-    let mut to_visit: Vec<_> = scores
+    let mut to_visit: Vec<Visit> = scores
         .iter()
         .filter(|((p, _), val)| val == &&shortest_path_len && p == end_pos)
-        .map(|(x, y)| (*x, *y))
+        .map(|((p, d), s)| Visit {
+            position: *p,
+            direction: *d,
+            score: *s,
+        })
         .collect();
 
     while let Some(curr) = to_visit.pop() {
-        // this is very ugly
+        seen.insert(curr.position);
 
-        seen.insert(curr.0 .0);
-
-        let pos_behind = curr.0 .0 + curr.0 .1.reverse().as_vec();
+        let pos_behind = curr.position + curr.direction.turn_around().as_vec();
         if scores
-            .get(&(pos_behind, curr.0 .1))
-            .map_or(false, |v| v == &(curr.1 - 1))
+            .get(&(pos_behind, curr.direction))
+            .map_or(false, |v| v == &(curr.score - 1))
         {
-            to_visit.push(((pos_behind, curr.0 .1), (curr.1 - 1)));
+            to_visit.push(Visit {
+                position: pos_behind,
+                direction: curr.direction,
+                score: curr.score - 1,
+            });
+        }
+
+        let new_score = curr.score - 1000;
+        if scores
+            .get(&(curr.position, curr.direction.turn_left()))
+            .map_or(false, |v| v == &new_score)
+        {
+            to_visit.push(Visit {
+                position: curr.position,
+                direction: curr.direction.turn_left(),
+                score: new_score,
+            });
         }
         if scores
-            .get(&(curr.0 .0, curr.0 .1.turn_left()))
-            .map_or(false, |v| v == &(curr.1 - 1000))
+            .get(&(curr.position, curr.direction.turn_right()))
+            .map_or(false, |v| v == &new_score)
         {
-            to_visit.push(((curr.0 .0, curr.0 .1.turn_left()), (curr.1 - 1000)));
-        }
-        if scores
-            .get(&(curr.0 .0, curr.0 .1.turn_right()))
-            .map_or(false, |v| v == &(curr.1 - 1000))
-        {
-            to_visit.push(((curr.0 .0, curr.0 .1.turn_right()), (curr.1 - 1000)));
+            to_visit.push(Visit {
+                position: curr.position,
+                direction: curr.direction.turn_right(),
+                score: new_score,
+            });
         }
     }
     seen.len()
