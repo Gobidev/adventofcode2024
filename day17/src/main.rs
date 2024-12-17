@@ -5,7 +5,7 @@ struct State {
     reg_c: usize,
     prog: Vec<u8>,
     pc: usize,
-    out: Vec<String>,
+    out: Vec<u8>,
 }
 
 impl State {
@@ -21,9 +21,9 @@ impl State {
     fn exec_instruction(&mut self) {
         let literal_op = self.prog[self.pc + 1];
         match self.prog[self.pc] {
-            0 => self.reg_a /= 2 << (self.get_combo_operand() - 1),
+            0 => self.reg_a >>= self.get_combo_operand(),
             1 => self.reg_b ^= literal_op as usize,
-            2 => self.reg_b = self.get_combo_operand() % 8,
+            2 => self.reg_b = self.get_combo_operand() & 7,
             3 => {
                 if self.reg_a != 0 {
                     self.pc = literal_op as usize;
@@ -31,9 +31,9 @@ impl State {
                 }
             }
             4 => self.reg_b ^= self.reg_c,
-            5 => self.out.push((self.get_combo_operand() % 8).to_string()),
-            6 => self.reg_b = self.reg_a / (2 << (self.get_combo_operand() - 1)),
-            7 => self.reg_c = self.reg_a / (2 << (self.get_combo_operand() - 1)),
+            5 => self.out.push((self.get_combo_operand() & 7) as u8),
+            6 => self.reg_b = self.reg_a >> self.get_combo_operand(),
+            7 => self.reg_c = self.reg_a >> self.get_combo_operand(),
             _ => panic!("Invalid instruction"),
         }
         self.pc += 2;
@@ -71,7 +71,12 @@ fn part1(state: &mut State) -> String {
     while state.pc < state.prog.len() - 1 {
         state.exec_instruction();
     }
-    state.out.join(",")
+    state
+        .out
+        .iter()
+        .map(|n| n.to_string())
+        .collect::<Vec<_>>()
+        .join(",")
 }
 
 fn main() {
