@@ -1,7 +1,4 @@
-use std::{
-    cmp::Reverse,
-    collections::BinaryHeap,
-};
+use std::{cmp::Reverse, collections::BinaryHeap};
 
 use ahash::AHashSet;
 use glam::IVec2;
@@ -65,7 +62,7 @@ fn get_score<'a>(scores: &'a mut [Vec<Distance>], pos: &IVec2) -> &'a mut Distan
     &mut scores[pos.x as usize][pos.y as usize]
 }
 
-fn find_path(corrupt_pos: &AHashSet<IVec2>, dimensions: &IVec2) -> (Vec<IVec2>, u32) {
+fn find_path(corrupt_pos: &AHashSet<IVec2>, dimensions: &IVec2) -> Distance {
     let mut scores =
         vec![vec![(u32::MAX, vec![]); dimensions.y as usize + 1]; dimensions.x as usize + 1];
     let mut to_visit = BinaryHeap::new();
@@ -80,7 +77,7 @@ fn find_path(corrupt_pos: &AHashSet<IVec2>, dimensions: &IVec2) -> (Vec<IVec2>, 
 
     while let Some(Reverse(curr)) = to_visit.pop() {
         if curr.position == *dimensions {
-            return (get_score(&mut scores, &curr.position).1.clone(), curr.score);
+            return (curr.score, get_score(&mut scores, &curr.position).1.clone());
         }
 
         if curr.score > get_score(&mut scores, &curr.position).0 {
@@ -112,7 +109,7 @@ fn find_path(corrupt_pos: &AHashSet<IVec2>, dimensions: &IVec2) -> (Vec<IVec2>, 
         }
     }
 
-    (vec![], u32::MAX)
+    (u32::MAX, vec![])
 }
 
 fn part1(positions: &[IVec2], dimensions: &IVec2) -> u32 {
@@ -120,7 +117,7 @@ fn part1(positions: &[IVec2], dimensions: &IVec2) -> u32 {
         &AHashSet::from_iter(positions[..1024].iter().map(|i| i.to_owned())),
         dimensions,
     )
-    .1
+    .0
 }
 
 fn part2(positions: &[IVec2], dimensions: &IVec2) -> String {
@@ -129,7 +126,7 @@ fn part2(positions: &[IVec2], dimensions: &IVec2) -> String {
         if !prev_path.is_empty() && !prev_path.contains(&positions[i - 1]) {
             continue;
         }
-        let (path, len) = find_path(
+        let (len, path) = find_path(
             &AHashSet::from_iter(positions[..i].iter().map(|i| i.to_owned())),
             dimensions,
         );
