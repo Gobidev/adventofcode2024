@@ -1,5 +1,9 @@
-use std::{cmp::Reverse, collections::BinaryHeap};
+use std::{
+    cmp::Reverse,
+    collections::BinaryHeap,
+};
 
+use ahash::AHashSet;
 use glam::IVec2;
 
 enum Direction {
@@ -25,42 +29,6 @@ impl Direction {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-enum Tile {
-    Corrupted,
-    Safe,
-}
-use Tile::*;
-
-fn parse(input: &str) -> Vec<IVec2> {
-    input
-        .lines()
-        .map(|l| {
-            let (y, x) = l.split_once(',').unwrap();
-            IVec2 {
-                x: x.parse().unwrap(),
-                y: y.parse().unwrap(),
-            }
-        })
-        .collect()
-}
-
-fn build_grid(dimensions: &IVec2, bytes_amount: usize, positions: &[IVec2]) -> Vec<Vec<Tile>> {
-    let mut grid = vec![];
-    for px in 0..=dimensions.x {
-        let mut line = vec![];
-        for py in 0..=dimensions.y {
-            if positions[..bytes_amount].contains(&IVec2::new(px, py)) {
-                line.push(Corrupted);
-            } else {
-                line.push(Safe);
-            }
-        }
-        grid.push(line);
-    }
-    grid
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 struct Node {
     score: u32,
     position: IVec2,
@@ -78,67 +46,102 @@ impl PartialOrd for Node {
     }
 }
 
-fn find_path(grid: &[Vec<Tile>], start_pos: &IVec2, end_pos: &IVec2) -> u32 {
-    let mut distances = vec![vec![u32::MAX; grid[0].len()]; grid.len()];
+type Distance = (u32, Vec<IVec2>);
+
+fn parse(input: &str) -> Vec<IVec2> {
+    input
+        .lines()
+        .map(|l| {
+            let (y, x) = l.split_once(',').unwrap();
+            IVec2 {
+                x: x.parse().unwrap(),
+                y: y.parse().unwrap(),
+            }
+        })
+        .collect()
+}
+
+fn get_score<'a>(scores: &'a mut [Vec<Distance>], pos: &IVec2) -> &'a mut Distance {
+    &mut scores[pos.x as usize][pos.y as usize]
+}
+
+fn find_path(corrupt_pos: &AHashSet<IVec2>, dimensions: &IVec2) -> (Vec<IVec2>, u32) {
+    let mut scores =
+        vec![vec![(u32::MAX, vec![]); dimensions.y as usize + 1]; dimensions.x as usize + 1];
     let mut to_visit = BinaryHeap::new();
 
-    distances[start_pos.x as usize][start_pos.y as usize] = 0;
+    let start_pos = IVec2::new(0, 0);
+
+    get_score(&mut scores, &start_pos).0 = 0;
     to_visit.push(Reverse(Node {
         score: 0,
-        position: *start_pos,
+        position: start_pos,
     }));
 
     while let Some(Reverse(curr)) = to_visit.pop() {
-        if curr.position == *end_pos {
-            return curr.score;
+        if curr.position == *dimensions {
+            return (get_score(&mut scores, &curr.position).1.clone(), curr.score);
         }
 
-        if curr.score > distances[curr.position.x as usize][curr.position.y as usize] {
+        if curr.score > get_score(&mut scores, &curr.position).0 {
             continue;
         }
 
         for direction in Direction::all() {
             let new_pos = curr.position + direction.to_vec();
-            let Some(Some(t)) = grid
-                .get(new_pos.x as usize)
-                .map(|l| l.get(new_pos.y as usize))
-            else {
+            if new_pos.cmplt(start_pos).any()
+                || new_pos.cmpgt(*dimensions).any()
+                || corrupt_pos.contains(&new_pos)
+            {
                 continue;
-            };
-            if *t != Corrupted {
-                let new_score = curr.score + 1;
-                if new_score < distances[new_pos.x as usize][new_pos.y as usize] {
-                    distances[new_pos.x as usize][new_pos.y as usize] = new_score;
-                    to_visit.push(Reverse(Node {
-                        score: new_score,
-                        position: new_pos,
-                    }));
-                }
+            }
+
+            let new_score = curr.score + 1;
+            if new_score < get_score(&mut scores, &new_pos).0 {
+                get_score(&mut scores, &new_pos).0 = new_score;
+
+                let mut prev_positions = get_score(&mut scores, &curr.position).1.clone();
+                prev_positions.push(curr.position);
+                get_score(&mut scores, &new_pos).1.extend(prev_positions);
+
+                to_visit.push(Reverse(Node {
+                    score: new_score,
+                    position: new_pos,
+                }));
             }
         }
     }
 
-    u32::MAX
+    (vec![], u32::MAX)
 }
 
 fn part1(positions: &[IVec2], dimensions: &IVec2) -> u32 {
-    let grid = build_grid(dimensions, 1024, positions);
-    find_path(&grid, &IVec2::new(0, 0), dimensions)
+    find_path(
+        &AHashSet::from_iter(positions[..1024].iter().map(|i| i.to_owned())),
+        dimensions,
+    )
+    .1
 }
 
 fn part2(positions: &[IVec2], dimensions: &IVec2) -> String {
-    let start_pos = IVec2::new(0, 0);
-    // todo: use binary search
-    for i in 1024.. {
-        let grid = build_grid(dimensions, i, positions);
-        if find_path(&grid, &start_pos, dimensions) == u32::MAX {
+    let mut prev_path = AHashSet::new();
+    for i in 1024..positions.len() {
+        if !prev_path.is_empty() && !prev_path.contains(&positions[i - 1]) {
+            continue;
+        }
+        let (path, len) = find_path(
+            &AHashSet::from_iter(positions[..i].iter().map(|i| i.to_owned())),
+            dimensions,
+        );
+        prev_path = AHashSet::from_iter(path);
+        if len == u32::MAX {
             return positions
                 .get(i - 1)
                 .map(|p| format!("{},{}", p.y, p.x))
                 .unwrap();
         }
     }
-    unreachable!()
+    panic!("not found")
 }
 
 fn main() {
