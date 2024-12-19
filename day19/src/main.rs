@@ -54,22 +54,11 @@ fn count_possible(
     if let Some(res) = cache.get(design) {
         return *res;
     }
-    let mut count = 0;
-    for pattern in available_patterns {
-        if pattern.len() > design.len() {
-            continue;
-        }
-        let mut matches = true;
-        for i in 0..pattern.len() {
-            if design[i] != pattern[i] {
-                matches = false;
-                break;
-            }
-        }
-        if matches {
-            count += count_possible(&design[pattern.len()..], available_patterns, cache);
-        }
-    }
+    let count = available_patterns
+        .iter()
+        .filter(|p| design.starts_with(p))
+        .map(|p| count_possible(&design[p.len()..], available_patterns, cache))
+        .sum();
     cache.insert(design.to_vec(), count);
     count
 }
