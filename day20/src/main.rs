@@ -24,7 +24,7 @@ impl Direction {
         vec![Up, Left, Down, Right]
     }
 
-    fn turn_right(&self) -> Self {
+    fn turn(&self) -> Self {
         match self {
             Up => Right,
             Left => Up,
@@ -99,33 +99,31 @@ fn get_distances(
 }
 
 fn part12(map: &[Vec<Tile>], path: &[IVec2], max_distance: i32) -> usize {
+    let combinations: Vec<(i32, i32)> = (1..=max_distance)
+        .flat_map(|i| (0..=(max_distance - i)).map(move |j| (i, j)))
+        .collect();
     path.par_iter()
         .map(|tile| {
             Direction::all()
                 .iter()
                 .map(|direction| {
-                    (1..=max_distance)
-                        .map(|i| {
-                            (0..=(max_distance - i))
-                                .filter(|j| {
-                                    let new_tile_pos = tile
-                                        + i * direction.to_vec()
-                                        + j * direction.turn_right().to_vec();
-                                    map.get(new_tile_pos.x as usize)
-                                        .and_then(|l| l.get(new_tile_pos.y as usize))
-                                        .map_or(false, |t| {
-                                            !t.tiletype
-                                                && t.distance
-                                                    >= map[tile.x as usize][tile.y as usize]
-                                                        .distance
-                                                        + 100
-                                                        + i as usize
-                                                        + *j as usize
-                                        })
+                    combinations
+                        .iter()
+                        .filter(|(i, j)| {
+                            let new_tile_pos =
+                                tile + i * direction.to_vec() + j * direction.turn().to_vec();
+                            map.get(new_tile_pos.x as usize)
+                                .and_then(|l| l.get(new_tile_pos.y as usize))
+                                .map_or(false, |t| {
+                                    t.distance
+                                        >= map[tile.x as usize][tile.y as usize].distance
+                                            + 100
+                                            + *i as usize
+                                            + *j as usize
+                                        && !t.tiletype
                                 })
-                                .count()
                         })
-                        .sum::<usize>()
+                        .count()
                 })
                 .sum::<usize>()
         })
