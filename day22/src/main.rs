@@ -4,20 +4,20 @@ fn parse(input: &str) -> Vec<usize> {
     input.lines().map(|l| l.parse().unwrap()).collect()
 }
 
-fn evolve_number(curr: &mut usize) {
-    *curr ^= *curr << 6;
-    *curr &= 0xffffff;
-    *curr ^= *curr >> 5;
-    *curr &= 0xffffff;
-    *curr ^= *curr << 11;
-    *curr &= 0xffffff;
+fn evolve_number(num: &mut usize) {
+    *num ^= *num << 6;
+    *num &= 0xffffff;
+    *num ^= *num >> 5;
+    *num &= 0xffffff;
+    *num ^= *num << 11;
+    *num &= 0xffffff;
 }
 
-fn part1(numbers: &[usize]) -> usize {
-    numbers
+fn part1(initial_numbers: &[usize]) -> usize {
+    initial_numbers
         .iter()
-        .map(|secret| {
-            let mut res = *secret;
+        .map(|num| {
+            let mut res = *num;
             (0..2000).for_each(|_| evolve_number(&mut res));
             res
         })
@@ -25,17 +25,13 @@ fn part1(numbers: &[usize]) -> usize {
 }
 
 fn part2(numbers: &[usize]) -> isize {
-    // kinda slow
-    let mut sequence_bananas: AHashMap<(isize, isize, isize, isize), Vec<isize>> = AHashMap::new();
+    let mut sequence_bananas: AHashMap<(i8, i8, i8, i8), Vec<i8>> = AHashMap::new();
     for number in numbers {
-        let mut costs_and_changes: Vec<(isize, isize)> = vec![];
+        let mut costs_and_changes: Vec<(i8, i8)> = vec![];
         let mut curr_magic = *number;
         for _ in 0..2000 {
-            let cost = curr_magic % 10;
-            costs_and_changes.push((
-                cost as isize,
-                costs_and_changes.last().map_or(0, |l| cost as isize - l.0),
-            ));
+            let cost = (curr_magic % 10) as i8;
+            costs_and_changes.push((cost, costs_and_changes.last().map_or(0, |l| cost - l.0)));
             evolve_number(&mut curr_magic);
         }
         let sequence_costs = costs_and_changes
@@ -58,12 +54,18 @@ fn part2(numbers: &[usize]) -> isize {
         .get(
             sequence_bananas
                 .iter()
-                .max_by(|a, b| a.1.iter().sum::<isize>().cmp(&b.1.iter().sum::<isize>()))
+                .max_by(|a, b| {
+                    a.1.iter()
+                        .map(|i| *i as isize)
+                        .sum::<isize>()
+                        .cmp(&b.1.iter().map(|i| *i as isize).sum::<isize>())
+                })
                 .unwrap()
                 .0,
         )
         .unwrap()
         .iter()
+        .map(|i| *i as isize)
         .sum()
 }
 
